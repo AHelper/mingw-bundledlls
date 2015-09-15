@@ -158,7 +158,7 @@ def main():
             try:
                 shutil.copy(dep, parent_dir)
             except shutil.SameFileError:
-                print "Same file, skipping copy"
+                print("Same file, skipping copy")
 
             if args.upx:
                 subprocess.call(["upx", target])
