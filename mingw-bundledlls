@@ -36,7 +36,7 @@ default_path_prefixes = [
 default_objdump_name = "objdump"
 
 # This blacklist may need extending
-blacklist = [
+default_blacklist = [
     "advapi32.dll", "kernel32.dll", "msvcrt.dll", "ole32.dll", "user32.dll",
     "ws2_32.dll", "comdlg32.dll", "gdi32.dll", "imm32.dll", "oleaut32.dll",
     "shell32.dll", "winmm.dll", "winspool.drv", "wldap32.dll",
@@ -44,7 +44,7 @@ blacklist = [
 ]
 
 
-def find_full_path(filename, path_prefixes):
+def find_full_path(filename, path_prefixes, skip_missing):
     path = None
 
     for path_prefix in path_prefixes:
@@ -55,16 +55,19 @@ def find_full_path(filename, path_prefixes):
             break
 
     if path is None:
-        raise RuntimeError(
-            "Can't find " + filename + ". If it is an inbuilt Windows DLL, "
-            "please add it to the blacklist variable in the script and send "
-            "a pull request!"
-        )
+        if skip_missing:
+            print("Can't find {}, skipping".format(filename))
+        else:
+            raise RuntimeError(
+                "Can't find " + filename + ". If it is an inbuilt Windows DLL, "
+                "please add it to the blacklist variable in the script and send "
+                "a pull request!"
+            )
 
     return path
 
 
-def gather_deps(path, objdump, path_prefixes):
+def gather_deps(path, objdump, path_prefixes, blacklist, skip_missing):
     ret = [path]
     output = str(subprocess.check_output([objdump, "-p", path]), 'utf-8').split("\n")
     for line in output:
@@ -76,8 +79,8 @@ def gather_deps(path, objdump, path_prefixes):
         if dep.lower() in blacklist:
             continue
 
-        dep_path = find_full_path(dep, path_prefixes)
-        subdeps = gather_deps(dep_path, objdump, path_prefixes)
+        dep_path = find_full_path(dep, path_prefixes, skip_missing)
+        subdeps = gather_deps(dep_path, objdump, path_prefixes, blacklist, skip_missing)
         ret.extend(subdeps)
 
     return ret
@@ -108,12 +111,23 @@ def main():
         "--objdump",
         help="Sets the name of the objdump executable to use"
     )
+    parser.add_argument(
+        "--blacklist",
+        action="append",
+        help="Adds a DLL to the blacklist. Can be used multiple times"
+    )
+    parser.add_argument(
+        "--skip-missing",
+        action="store_true",
+        help="Skips DLLs that are missing"
+    )
     args = parser.parse_args()
 
     if args.upx and not args.copy:
         raise RuntimeError("Can't run UPX if --copy hasn't been provided.")
 
     path_prefixes = default_path_prefixes[:]
+    blacklist = default_blacklist[:]
 
     if args.dll_search_path:
         path_prefixes = args.dll_search_path + path_prefixes
@@ -123,7 +137,10 @@ def main():
     else:
         objdump_name = default_objdump_name
 
-    all_deps = set(gather_deps(args.exe_file, objdump_name, path_prefixes))
+    if args.blacklist:
+        blacklist += args.blacklist
+
+    all_deps = set(gather_deps(args.exe_file, objdump_name, path_prefixes, blacklist, args.skip_missing))
     all_deps.remove(args.exe_file)
 
     print("Found the following dependencies:\n")
