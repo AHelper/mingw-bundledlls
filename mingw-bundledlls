@@ -138,7 +138,7 @@ def main():
         objdump_name = default_objdump_name
 
     if args.blacklist:
-        blacklist += [bl.tolower() for bl in args.blacklist]
+        blacklist += [bl.lower() for bl in args.blacklist]
 
     all_deps = set(gather_deps(args.exe_file, objdump_name, path_prefixes, blacklist, args.skip_missing))
     all_deps.remove(args.exe_file)
