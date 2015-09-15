@@ -112,8 +112,8 @@ def main():
     if args.upx and not args.copy:
         raise RuntimeError("Can't run UPX if --copy hasn't been provided.")
 
-    if args.mingwbin:
-        path_prefixes = [args.mingwbin]
+    if args.mingw_bin:
+        path_prefixes = [args.mingw_bin]
     else:
         path_prefixes = default_path_prefixes
 
