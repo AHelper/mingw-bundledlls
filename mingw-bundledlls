@@ -100,8 +100,9 @@ def main():
         help="Only valid if --copy is provided. Run UPX on all the DLLs and EXE."
     )
     parser.add_argument(
-        "--mingw-bin",
-        help="Sets the path to search for DLLs"
+        "--dll-search-path",
+        action="append",
+        help="Adds a path to search for DLLs. Can be used multiple times"
     )
     parser.add_argument(
         "--objdump",
@@ -112,10 +113,10 @@ def main():
     if args.upx and not args.copy:
         raise RuntimeError("Can't run UPX if --copy hasn't been provided.")
 
-    if args.mingw_bin:
-        path_prefixes = [args.mingw_bin]
-    else:
-        path_prefixes = default_path_prefixes
+    path_prefixes = default_path_prefixes[:]
+
+    if args.dll_search_path:
+        path_prefixes = args.dll_search_path + path_prefixes
 
     if args.objdump:
         objdump_name = args.objdump
