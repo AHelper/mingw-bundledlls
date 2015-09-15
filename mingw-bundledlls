@@ -101,14 +101,10 @@ def main():
     )
     parser.add_argument(
         "--mingw-bin",
-        action="append_const",
-        const=str,
-        help="Adds a mingw bin path to the list of DLL paths searched. Can be used multiple times"
+        help="Sets the path to search for DLLs"
     )
     parser.add_argument(
         "--objdump",
-        action="store_const",
-        const=str,
         help="Sets the name of the objdump executable to use"
     )
     args = parser.parse_args()
@@ -116,10 +112,10 @@ def main():
     if args.upx and not args.copy:
         raise RuntimeError("Can't run UPX if --copy hasn't been provided.")
 
-    path_prefixes = default_path_prefixes[:]
-
     if args.mingwbin:
-        path_prefixes.append(args.mingwbin)
+        path_prefixes = [args.mingwbin]
+    else:
+        path_prefixes = default_path_prefixes
 
     if args.objdump:
         objdump_name = args.objdump
